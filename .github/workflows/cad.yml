@@ -1,0 +1,44 @@
+name: CAD end-to-end
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cad:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bootstrap on Ubuntu Server
+        if: runner.os == 'Linux'
+        run: bash scripts/install.sh
+      - name: Bootstrap on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/install.ps1
+      - name: Run tests
+        shell: bash
+        run: |
+          py=.venv/bin/python
+          if [[ "$RUNNER_OS" == Windows ]]; then py=.venv/Scripts/python.exe; fi
+          "$py" -m pip install pytest
+          "$py" -m pytest -q
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: hinged-enclosure-${{ runner.os }}
+          path: .local/first-run/
+          include-hidden-files: true
+          if-no-files-found: error

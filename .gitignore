@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+workspace/
+out/
+.local/
+.codex/config.toml
+.agents/skills/consumer-cad/

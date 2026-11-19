@@ -1,0 +1,18 @@
+{
+  "length": 72.0,
+  "width": 40.0,
+  "height": 13.0,
+  "wall": 1.6,
+  "lid_thickness": 1.2,
+  "lid_gap": 0.25,
+  "fixed_cover_length": 32.0,
+  "pcb_length": 24.0,
+  "pcb_width": 28.0,
+  "pcb_thickness": 1.6,
+  "battery_length": 25.0,
+  "battery_width": 20.0,
+  "battery_thickness": 5.0,
+  "clearance": 0.4,
+  "open_angle_deg": 110.0,
+  "sweep_step_deg": 15.0
+}
