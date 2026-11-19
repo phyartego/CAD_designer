@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param (
     [switch]$SkipFreeCAD,
+    [switch]$SkipCodex,
     [switch]$SkipDemo,
     [switch]$GlobalCodex
 )
@@ -121,6 +122,10 @@ if (-not $SkipFreeCAD) {
         if (-not $cmdPath) { throw "Set FREECAD_CMD to FreeCADCmd.exe and rerun." }
     }
     $env:FREECAD_CMD = $cmdPath
+}
+if (-not $SkipCodex) {
+    . (Join-Path $PSScriptRoot "install-codex.ps1")
+    Install-LocalCodex -Root $repoRoot
 }
 $agentArgs = @("scripts/configure_agent.py")
 if ($GlobalCodex) { $agentArgs += "--global-codex" }

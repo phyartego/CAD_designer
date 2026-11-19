@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import tomllib
 import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -66,6 +67,19 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(config["env"], payload["env"])
             self.assertEqual(argv[5:], ["mcp", "list"])
             self.assertEqual(proc.call_args.kwargs["cwd"], root)
+
+    def test_native_windows_cli_discovery_is_checkout_scoped(self):
+        spec = importlib.util.spec_from_file_location("start_codex", FILE.with_name("start_codex.py"))
+        launcher = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(launcher)
+        with tempfile.TemporaryDirectory() as temp, patch.object(sys, "platform", "win32"):
+            root = Path(temp) / "cad & models"
+            private = root / ".local/codex/codex-x86_64-pc-windows-msvc.exe"
+            private.parent.mkdir(parents=True)
+            with patch.object(launcher.shutil, "which", return_value="installed-codex.exe"):
+                self.assertEqual(launcher.codex_command(root), ["installed-codex.exe"])
+                private.touch()
+                self.assertEqual(launcher.codex_command(root), [str(private)])
 
     def test_configuration_respects_user_managed_server(self):
         with self.assertRaisesRegex(ValueError, "user-managed"):

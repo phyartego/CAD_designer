@@ -12,6 +12,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 已解压源码时，从 `consumer-cad-ai` 目录直接执行第三行。脚本复用本机 64 位 Python 3.11/3.12 和 FreeCADCmd，缺少时优先通过 winget 安装当前用户的 Python 3.12 和 FreeCAD。winget 缺失或安装失败时，脚本会先复查安装结果，并按需下载 Python 3.12.10 和 FreeCAD 1.1.2 的官方 x64 安装程序，核验仓库内固定的 SHA-256 后安装。CAD 内核依赖装入仓库的 `.venv`，FreeCAD 使用自己的 Python 和 Open CASCADE。首次安装需要访问 winget 源、安装包下载站和 PyPI。
 
+Windows 安装器会复用可运行的 Codex CLI。全新机器会自动下载 OpenAI 发布的 Codex CLI 0.170.0 原生 x64 ZIP（约 205 MiB），校验固定 SHA-256，将完整包安装到当前仓库的 `.local/codex/`，并检查 Windows 辅助程序和 `--version`。这个入口无需 Node.js，也无需修改系统 PATH。首次运行 `.\scripts\cad-codex.cmd` 时按 Codex 提示登录自己的账号。已有本地登录可复用。[OpenAI CLI 文档](https://developers.openai.com/codex/cli/) · [官方固定版本](https://github.com/openai/codex/releases/tag/rust-v0.170.0)
+
 脚本写入当前仓库的 MCP 配置与 Skill，运行环境诊断和需要真实 FreeCAD 的样例。终端最后显示本次示例目录。重复运行会创建新的结果目录。同一个 checkout 可以通过 `git pull` 加重跑安装脚本完成更新。移动 checkout 后请在新位置重新建虚拟环境，Python venv 内的启动器包含绝对路径。
 
 如使用便携版 FreeCAD，在运行安装脚本前设置 `$env:FREECAD_CMD = 'D:\Apps\FreeCAD\bin\FreeCADCmd.exe'`。脚本会把此路径带入 Agent 配置，使新启动的客户端也能找到它。
@@ -19,8 +21,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 | 安装选项 | 适用场景 |
 | --- | --- |
 | `-SkipFreeCAD` | 只需 build123d、STEP、BOM 和二维导出。安装样例跳过 FCStd。 |
+| `-SkipCodex` | 使用其他 MCP 客户端，跳过本机 Codex CLI 的检测与安装。 |
 | `-SkipDemo` | 已运行过整套案例，希望加快更新。 |
-| `-GlobalCodex` | 希望其他项目的 Codex 也使用此 checkout 的 MCP。需要已安装 Codex CLI。默认配置仅在当前受信任项目内生效。 |
+| `-GlobalCodex` | 希望其他项目的 Codex 也使用此 checkout 的 MCP。使用 PATH 中或仓库内的 Codex CLI。默认配置仅在当前受信任项目内生效。 |
 
 更新后可再次验证。指定一个新的输出目录。
 

@@ -16,7 +16,7 @@ cd consumer-cad-ai
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-脚本安装或复用 Python 和 FreeCAD，配置虚拟环境、本地 MCP 和项目 Skill，然后实际构建一次电池仓。安装成功后，终端会打印带 FCStd、STEP 和图纸的结果目录。已安装 Codex CLI 时，在同一终端执行 `.\scripts\cad-codex.cmd` 即可启动带 CAD 工具的会话。用 `.\scripts\cad-codex.cmd mcp list` 可确认 `consumer-cad` 已启用。也可用支持项目配置的 Codex 客户端打开此受信任项目。其他本地 stdio 客户端可使用生成的 `.local/mcp.json`。安装选项、Ubuntu Server 步骤和远程网页接入见 [部署说明](docs/deployment.md) 和 [ChatGPT 网页接入](docs/remote.md)。
+脚本安装或复用 Python、FreeCAD 和 Codex CLI，配置虚拟环境、本地 MCP 和项目 Skill，然后实际构建一次电池仓。安装成功后，终端会打印带 FCStd、STEP 和图纸的结果目录。在同一终端执行 `.\scripts\cad-codex.cmd` 即可启动带 CAD 工具的会话。首次使用 Codex 时按客户端提示登录。用 `.\scripts\cad-codex.cmd mcp list` 可确认 `consumer-cad` 已启用。也可用支持项目配置的 Codex 客户端打开此受信任项目。其他本地 stdio 客户端可使用生成的 `.local/mcp.json`。安装选项、Ubuntu Server 步骤和远程网页接入见 [部署说明](docs/deployment.md) 和 [ChatGPT 网页接入](docs/remote.md)。
 
 可交给 Agent 的第一项设计任务：
 

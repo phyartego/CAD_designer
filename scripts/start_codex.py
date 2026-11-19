@@ -7,10 +7,14 @@ import subprocess
 import sys
 
 
-def codex_command():
+def codex_command(root=None):
+    root = Path(__file__).resolve().parents[1] if root is None else root
+    private = root / ".local" / "codex" / "codex-x86_64-pc-windows-msvc.exe"
+    if sys.platform == "win32" and private.is_file():
+        return [str(private)]
     cli = shutil.which("codex")
     if not cli:
-        raise RuntimeError("Install the Codex CLI or connect your stdio client using .local/mcp.json")
+        raise RuntimeError("Run scripts/install.ps1 on Windows, install Codex CLI, or use .local/mcp.json with your stdio client")
     if os.name == "nt" and Path(cli).suffix.lower() in (".cmd", ".bat", ".ps1"):
         # Invoke npm's executable JS entry point directly. cmd.exe re-parses TOML
         # quotes and characters in file names, even when Python passes an argv list.
@@ -31,7 +35,7 @@ def launch(root, arguments):
     env = ", ".join(f"{quote(key)}={quote(value)}" for key, value in server["env"].items())
     override = ("mcp_servers.consumer-cad={command=" + quote(server["command"]) +
                 ", startup_timeout_sec=90, tool_timeout_sec=600, env={" + env + "}}")
-    return subprocess.call([*codex_command(), "-C", str(root), "-c", override, *arguments], cwd=root)
+    return subprocess.call([*codex_command(root), "-C", str(root), "-c", override, *arguments], cwd=root)
 
 
 if __name__ == "__main__":
