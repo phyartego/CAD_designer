@@ -1,5 +1,6 @@
 import csv
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -75,6 +76,18 @@ class ExportTests(unittest.TestCase):
             self.assertIn(b"OpeningAngle", document)
             self.assertIn(b"DesignJSON", document)
             self.assertEqual(len([s for s in native.namelist() if s.endswith(".brp")]), len(self.parts))
+
+    @unittest.skipUnless(sys.platform.startswith("linux") and Path("/usr/bin/freecadcmd").exists(),
+                         "Requires the distro FreeCAD console")
+    def test_distro_freecad_ignores_foreign_python_shared_libraries(self):
+        # Simulate a caller (e.g. setup-python/Conda) whose dynamic linker would
+        # otherwise inject an incompatible libpython into the distro FreeCAD.
+        with tempfile.TemporaryDirectory() as bad_libs:
+            for minor in range(10, 15):
+                (Path(bad_libs) / f"libpython3.{minor}.so.1.0").write_bytes(b"foreign runtime")
+            with patch.dict("os.environ", LD_LIBRARY_PATH=bad_libs, PYTHONHOME="/wrong/python"):
+                filename = write_fcstd(self.path, self.bom(), {}, None, "/usr/bin/freecadcmd")
+                self.assertTrue((self.path / filename).is_file())
 
     def test_missing_explicit_freecad_binary(self):
         with patch.dict("os.environ", FREECAD_CMD=str(self.path / "missing.exe")):

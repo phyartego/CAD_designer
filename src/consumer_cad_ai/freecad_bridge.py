@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 
 
@@ -27,7 +28,7 @@ def find_freecad(command=None):
             for path in sorted(root.glob("FreeCAD*/bin/FreeCADCmd.exe"), reverse=True):
                 if path.is_file():
                     return str(path)
-    raise FileNotFoundError("Install FreeCAD 1.x or set FREECAD_CMD to FreeCADCmd.")
+    raise FileNotFoundError("Install FreeCAD 0.21 or later, or set FREECAD_CMD to FreeCADCmd.")
 
 
 def write_fcstd(directory, rows, parameters, hinge, command=None):
@@ -45,6 +46,18 @@ def write_fcstd(directory, rows, parameters, hinge, command=None):
         env = dict(os.environ)
         for var in ("PYTHONHOME", "PYTHONPATH"):
             env.pop(var, None)
+        if sys.platform.startswith("linux") and (
+            Path(executable).parent == Path("/usr/bin") or
+            Path(executable).resolve().is_relative_to("/usr/lib")
+        ):
+            # A distro FreeCAD embeds the system Python. setup-python and Conda
+            # can inject a different libpython with the same SONAME but different
+            # built-in modules (e.g. math). Keep the override local to this child.
+            env.pop("LD_LIBRARY_PATH", None)
+            env.pop("VIRTUAL_ENV", None)
+            env["PYTHONHOME"] = "/usr"
+            env["PYTHONNOUSERSITE"] = "1"
+            env["PATH"] = os.pathsep.join(["/usr/bin", "/bin", env.get("PATH", "")])
         env.update(CAD_EXPORT_JOB=str(job_file),
                    CAD_EXPORT_SCRIPT=str(Path(__file__).with_name("freecad_worker.py").resolve()))
         launch = "import os, runpy; runpy.run_path(os.environ['CAD_EXPORT_SCRIPT'], run_name='__main__')\n"
