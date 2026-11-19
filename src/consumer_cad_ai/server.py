@@ -5,7 +5,9 @@ import json
 import os
 from pathlib import Path
 import re
-from threading import Lock
+import subprocess
+import sys
+import tempfile
 from uuid import uuid4
 
 import anyio
@@ -13,16 +15,26 @@ from mcp.server.fastmcp import FastMCP, Image
 
 from .design import Design
 
-# Serialize calls into OpenCascade and the drawing backend within each server.
-_cad_lock = Lock()
 _CHUNK = 48 * 1024
 
 
-async def _cad(function, *args):
-    def compute():
-        with _cad_lock:
-            return function(*args)
-    return await anyio.to_thread.run_sync(compute)
+async def _cad(operation, data=None, args=()):
+    """Keep the native CAD runtime off the MCP transport's stdin/stdout and event loop."""
+    with tempfile.TemporaryDirectory(prefix="cad-worker-") as work:
+        directory = Path(work)
+        result_file = directory / "report.json"
+        command = [sys.executable, "-m", "consumer_cad_ai", "--json-out", str(result_file), operation]
+        if data is not None:
+            input_file = directory / "input.json"
+            input_file.write_text(json.dumps(data, allow_nan=False), encoding="utf-8")
+            command.append(str(input_file))
+        process = await anyio.run_process(
+            [*command, *args], stdin=subprocess.DEVNULL, check=False,
+        )
+        if process.returncode not in (0, 2) or not result_file.is_file():
+            detail = (process.stderr or process.stdout or b"").decode(errors="replace")[-2500:]
+            raise RuntimeError(f"CAD {operation} failed (exit {process.returncode}): {detail}")
+        return json.loads(result_file.read_text(encoding="utf-8"))
 
 
 def _workspace():
@@ -60,12 +72,6 @@ def _artifact_path(run_id, artifact):
     return path
 
 
-def _publish(function, data, freecad):
-    run_id = uuid4().hex
-    receipt = function(data, _workspace() / run_id, freecad=freecad)
-    return {**receipt, "run_id": run_id}
-
-
 def create_server(**settings):
     server = FastMCP(
         "consumer-cad",
@@ -75,6 +81,20 @@ def create_server(**settings):
         **settings,
     )
 
+    worker_slot = anyio.CapacityLimiter(1)
+
+    async def execute(operation, data=None, args=()):
+        async with worker_slot:
+            return await _cad(operation, data, args)
+
+    async def publish(operation, data, freecad):
+        run_id = uuid4().hex
+        args = ["--out", str(_workspace() / run_id)]
+        if freecad is not None:
+            args.append("--freecad" if freecad else "--no-freecad")
+        receipt = await execute(operation, data, args)
+        return {**receipt, "run_id": run_id}
+
     @server.tool()
     def enclosure_defaults() -> dict:
         """Return editable millimetre/degree parameters for the hinged metal battery enclosure."""
@@ -83,42 +103,34 @@ def create_server(**settings):
     @server.tool()
     async def check_enclosure(parameters: dict) -> dict:
         """Measure solids, clearances, pairwise interference and sampled hinge poses. Accepts partial overrides."""
-        from .geometry import verify
-        return await _cad(verify, Design.from_dict(parameters))
+        return await execute("check", parameters)
 
     @server.tool()
     async def optimize_enclosure_height(parameters: dict, min_height: float,
                                         max_height: float, step: float = 0.5) -> dict:
         """Find a verified compact body height on the requested mm grid, preserving PCB and cell dimensions."""
-        from .optimize import optimize_height
-        return await _cad(optimize_height, Design.from_dict(parameters), min_height, max_height, step)
+        return await execute("optimize", parameters, ["--min-height", str(min_height),
+                                                  "--max-height", str(max_height), "--step", str(step)])
 
     @server.tool()
     async def build_enclosure(parameters: dict, freecad: bool | None = None) -> dict:
         """Verify and export the parametric enclosure. True requires FCStd, null auto-detects FreeCAD."""
-        from .pipeline import run_enclosure
-        return await _cad(_publish, run_enclosure, parameters, freecad)
+        return await publish("build", parameters, freecad)
 
     @server.tool()
-    def solid_schema() -> dict:
+    async def solid_schema() -> dict:
         """Return the JSON specification for arbitrary multi-part box/cylinder CAD models and hinge motion."""
-        from .solid_spec import spec_schema
-        return spec_schema()
+        return await execute("schema")
 
     @server.tool()
     async def check_custom(spec: dict) -> dict:
         """Measure and check a declarative solid model as defined in solid_schema, without writing files."""
-        from .geometry import verify_components
-        from .solid_spec import build_spec
-        def check():
-            return verify_components(*build_spec(spec))
-        return await _cad(check)
+        return await execute("check-spec", spec)
 
     @server.tool()
     async def build_custom(spec: dict, freecad: bool | None = None) -> dict:
         """Verify and export a declarative assembly. Revise the JSON spec to iterate on new product geometry."""
-        from .pipeline import run_spec
-        return await _cad(_publish, run_spec, spec, freecad)
+        return await publish("build-spec", spec, freecad)
 
     @server.tool()
     def read_run(run_id: str) -> dict:

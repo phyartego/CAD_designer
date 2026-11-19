@@ -14,6 +14,8 @@
 | `exports.py`、`drawings.py` | 同一批验证过的装配实体 | 输出有名称的 STEP 装配、单件 STEP、带尺寸的工程视图、BOM 和预览 |
 | `freecad_bridge.py`、`freecad_worker.py` | STEP 零件、参数、铰链轴 | 启动独立的 FreeCADCmd 进程生成 FCStd，重新打开验证实体及运动表达式 |
 
+MCP 接收请求后，通过相同的 CLI 在独立 Python 进程执行几何计算。CAD 进程的标准输入与协议管道隔离，结果经 JSON 文件传回，避免 Windows 原生数值库在加载时占用 MCP 的输入流。同一服务器一次运行一个几何任务，客户端仍可查询已完成的运行或读取工程图。[MCP Windows stdio 与原生库问题](https://github.com/modelcontextprotocol/python-sdk/issues/2832)
+
 **FreeCAD 分进程运行的原因。** build123d 环境和 FreeCAD 发行版各自带有 Python 和几何内核绑定。跨进程交换 STEP、参数及部件清单，可以分别选择适合本地操作系统的包。使用模型脚本、尺寸校验、STEP 和二维图的任务只依赖项目 venv；FCStd 生成时才需要启动 FreeCAD。[FreeCAD 上游源码](https://github.com/FreeCAD/FreeCAD)
 
 **与已有 FreeCAD MCP 的分工。** 对需要获取当前窗口、选取对象、查询已有文档特征树的工作，可以并行接入已有适配器。neka-nat/freecad-mcp 的交互路径需要在 FreeCAD 内启动 RPC 工作台；Robust MCP Bridge 还支持 Linux 嵌入式和 headless 运行。本项目的主流程从源码重复生成结构，用消费电子间隙和开合检查给 Agent 反馈，部署时无需在某个已打开的文档内启动服务。MCP 的协议协商、工具发现和 stdio 传输由官方 Python SDK 提供。[neka-nat/freecad-mcp](https://github.com/neka-nat/freecad-mcp) · [Robust MCP Bridge](https://github.com/spkane/freecad-addon-robust-mcp-server) · [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)

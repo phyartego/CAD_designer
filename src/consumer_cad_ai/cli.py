@@ -35,6 +35,7 @@ def _doctor():
 
 def _parser():
     cli = argparse.ArgumentParser(prog="consumer-cad", description=__doc__)
+    cli.add_argument("--json-out", type=Path, help="write the result to a new JSON file instead of stdout")
     sub = cli.add_subparsers(dest="action", required=True)
     for name, help_text in [
         ("doctor", "report versions and run a 1 mm³ CAD kernel check"),
@@ -44,6 +45,8 @@ def _parser():
         sub.add_parser(name, help=help_text)
     check = sub.add_parser("check", help="measure and check an enclosure")
     check.add_argument("design", type=Path, nargs="?")
+    spec = sub.add_parser("check-spec", help="measure and check a declarative solid model")
+    spec.add_argument("source", type=Path)
     opt = sub.add_parser("optimize", help="find a verified enclosure height")
     opt.add_argument("design", type=Path)
     opt.add_argument("--min-height", required=True, type=float)
@@ -74,6 +77,10 @@ def _execute(args):
     if args.action == "check":
         from .geometry import verify
         return verify(Design.from_dict(_payload(args.design)))
+    if args.action == "check-spec":
+        from .geometry import verify_components
+        from .solid_spec import build_spec
+        return verify_components(*build_spec(_payload(args.source)))
     if args.action == "optimize":
         from .optimize import optimize_height
         report = optimize_height(Design.from_dict(_payload(args.design)), args.min_height, args.max_height, args.step)
@@ -103,7 +110,12 @@ def main(argv=None):
             serve_remote()
             return 0
         result = _execute(args)
-        print(json.dumps(result, ensure_ascii=True, allow_nan=False, indent=2))
+        encoded = json.dumps(result, ensure_ascii=True, allow_nan=False, indent=2)
+        if args.json_out:
+            with args.json_out.open("x", encoding="utf-8") as stream:
+                stream.write(encoded + "\n")
+        else:
+            print(encoded)
         return 0 if result.get("passed", True) else 2
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"consumer-cad: {exc}", file=sys.stderr)
