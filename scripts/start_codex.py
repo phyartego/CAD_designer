@@ -9,9 +9,11 @@ import sys
 
 def codex_command(root=None):
     root = Path(__file__).resolve().parents[1] if root is None else root
-    private = root / ".local" / "codex" / "codex-x86_64-pc-windows-msvc.exe"
-    if sys.platform == "win32" and private.is_file():
-        return [str(private)]
+    if sys.platform == "win32":
+        for directory in ("runtime", ".local"):
+            private = root / directory / "codex" / "codex-x86_64-pc-windows-msvc.exe"
+            if private.is_file():
+                return [str(private)]
     cli = shutil.which("codex")
     if not cli:
         raise RuntimeError("Run scripts/install.ps1 on Windows, install Codex CLI, or use .local/mcp.json with your stdio client")
@@ -28,12 +30,16 @@ def codex_command(root=None):
 
 def launch(root, arguments):
     file = root / ".local" / "mcp.json"
+    if (root / "runtime" / "python" / "python.exe").is_file():
+        from configure_agent import configure
+        file = configure(root)
     if not file.exists():
         raise RuntimeError("Run the installation script first to generate .local/mcp.json")
     server = json.loads(file.read_text(encoding="utf-8"))["mcpServers"]["consumer-cad"]
     quote = lambda value: json.dumps(value, ensure_ascii=False)
     env = ", ".join(f"{quote(key)}={quote(value)}" for key, value in server["env"].items())
     override = ("mcp_servers.consumer-cad={command=" + quote(server["command"]) +
+                ", args=" + quote(server.get("args", [])) +
                 ", startup_timeout_sec=90, tool_timeout_sec=600, env={" + env + "}}")
     return subprocess.call([*codex_command(root), "-C", str(root), "-c", override, *arguments], cwd=root)
 
@@ -41,6 +47,6 @@ def launch(root, arguments):
 if __name__ == "__main__":
     try:
         raise SystemExit(launch(Path(__file__).resolve().parents[1], sys.argv[1:]))
-    except (OSError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError) as exc:
         print(exc, file=sys.stderr)
         raise SystemExit(1)

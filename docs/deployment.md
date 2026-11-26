@@ -5,12 +5,14 @@
 准备好 Git、网络连接和一个可写目录。打开 PowerShell，在准备放源码的位置执行以下命令。
 
 ```powershell
-git clone https://github.com/phyartego/consumer-cad-ai.git
-cd consumer-cad-ai
+git clone https://github.com/phyartego/CAD_designer.git
+cd CAD_designer
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-已解压源码时，从 `consumer-cad-ai` 目录直接执行第三行。脚本复用本机 64 位 Python 3.11/3.12 和 FreeCADCmd，缺少时优先通过 winget 安装当前用户的 Python 3.12 和 FreeCAD。winget 缺失或安装失败时，脚本会先复查安装结果，并按需下载 Python 3.12.10 和 FreeCAD 1.1.2 的官方 x64 安装程序，核验仓库内固定的 SHA-256 后安装。CAD 内核依赖装入仓库的 `.venv`，FreeCAD 使用自己的 Python 和 Open CASCADE。首次安装需要访问 winget 源、安装包下载站和 PyPI。
+已解压源码时，从项目根目录直接执行第三行。脚本复用本机 64 位 Python 3.11/3.12 和 FreeCADCmd，缺少时优先通过 winget 安装当前用户的 Python 3.12 和 FreeCAD。winget 缺失或安装失败时，脚本会先复查安装结果，并按需下载 Python 3.12.10 和 FreeCAD 1.1.2 的官方 x64 安装程序，核验仓库内固定的 SHA-256 后安装。CAD 内核依赖装入仓库的 `.venv`，FreeCAD 使用自己的 Python 和 Open CASCADE。首次安装需要访问 winget 源、安装包下载站和 PyPI。
+
+希望在 Windows 上直接解压运行时，使用 [GitHub Releases](https://github.com/phyartego/CAD_designer/releases) 中的 `Windows-x64-Portable.zip`。
 
 Windows 安装器会复用可运行的 Codex CLI。全新机器会自动下载 OpenAI 发布的 Codex CLI 0.170.0 原生 x64 ZIP（约 205 MiB），校验固定 SHA-256，将完整包安装到当前仓库的 `.local/codex/`，并检查 Windows 辅助程序和 `--version`。这个入口无需 Node.js，也无需修改系统 PATH。首次运行 `.\scripts\cad-codex.cmd` 时按 Codex 提示登录自己的账号。已有本地登录可复用。[OpenAI CLI 文档](https://developers.openai.com/codex/cli/) · [官方固定版本](https://github.com/openai/codex/releases/tag/rust-v0.170.0)
 
@@ -31,6 +33,23 @@ Windows 安装器会复用可运行的 Codex CLI。全新机器会自动下载 O
 .\.venv\Scripts\consumer-cad.exe doctor
 .\.venv\Scripts\consumer-cad.exe demo --out .\outputs\demo-01 --freecad
 ```
+
+### 通过命令行构建
+
+在源码目录使用以下命令。便携包内可将 `$cad` 改为 `".\cad.cmd"`。
+
+```powershell
+$cad = ".\.venv\Scripts\consumer-cad.exe"
+& $cad check examples\hinged-enclosure.json
+& $cad build-spec examples\sensor-clip.json --out outputs\sensor-01
+& $cad recipe examples\desktop_stand.py --out outputs\stand-01
+& $cad optimize examples\hinged-enclosure.json --min-height 12 --max-height 22 --step 0.5 --save-design revised.json
+& $cad build revised.json --out outputs\revised-01 --freecad
+```
+
+退出码 0 表示成功，2 表示几何校验发现问题，1 表示输入、依赖或运行错误。
+
+在源码目录运行 `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 可以执行测试。FreeCAD 原生测试使用 FreeCADCmd 生成并重新打开工程。 [GitHub Actions](https://github.com/phyartego/CAD_designer/actions)
 
 ## 在 Agent 中使用
 

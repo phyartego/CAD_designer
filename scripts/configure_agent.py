@@ -1,4 +1,4 @@
-"""Configure local stdio clients for this checkout. Run with its venv Python."""
+"""Configure local stdio clients for a source checkout or a Windows bundle."""
 import argparse
 import json
 import os
@@ -50,6 +50,7 @@ def codex_config(existing: str, server: dict) -> str:
     generated = "\n".join([
         BEGIN, f"[mcp_servers.{NAME}]",
         f'command = {json.dumps(server["command"], ensure_ascii=False)}',
+        f'args = {json.dumps(server["args"], ensure_ascii=False)}',
         "startup_timeout_sec = 90", "tool_timeout_sec = 600",
         f"[mcp_servers.{NAME}.env]", *env_lines, END,
     ])
@@ -60,14 +61,22 @@ def codex_config(existing: str, server: dict) -> str:
 
 def configure(root: Path, global_codex: bool = False) -> Path:
     root = root.resolve()
-    bin_dir = root / ".venv" / ("Scripts" if os.name == "nt" else "bin")
-    command = bin_dir / ("consumer-cad-mcp.exe" if os.name == "nt" else "consumer-cad-mcp")
-    if not command.is_file():
-        raise FileNotFoundError(f"Install the project in {root / '.venv'} first")
     env = {"CAD_WORKSPACE": str(root / "workspace")}
-    if os.environ.get("FREECAD_CMD"):
-        env["FREECAD_CMD"] = str(Path(os.environ["FREECAD_CMD"]).resolve(strict=True))
-    server = {"command": str(command), "args": [], "env": env}
+    portable_python = root / "runtime" / "python" / "python.exe"
+    if portable_python.is_file():
+        command = portable_python
+        args = ["-m", "consumer_cad_ai", "serve"]
+        freecad = root / "runtime" / "freecad" / "bin" / "freecadcmd.exe"
+        env["FREECAD_CMD"] = str(freecad.resolve(strict=True))
+    else:
+        bin_dir = root / ".venv" / ("Scripts" if os.name == "nt" else "bin")
+        command = bin_dir / ("consumer-cad-mcp.exe" if os.name == "nt" else "consumer-cad-mcp")
+        if not command.is_file():
+            raise FileNotFoundError(f"Install the project in {root / '.venv'} first")
+        args = []
+        if os.environ.get("FREECAD_CMD"):
+            env["FREECAD_CMD"] = str(Path(os.environ["FREECAD_CMD"]).resolve(strict=True))
+    server = {"command": str(command), "args": args, "env": env}
     config = root / ".codex" / "config.toml"
     original = config.read_text(encoding="utf-8") if config.exists() else ""
     contents = codex_config(original, server)
@@ -86,13 +95,14 @@ def configure(root: Path, global_codex: bool = False) -> Path:
             for row in json.loads(listing.stdout):
                 if row["name"] == NAME:
                     transport = row["transport"]
-                    if transport.get("command") == str(command) and transport.get("env") == env:
+                    if (transport.get("command") == str(command) and transport.get("env") == env
+                            and transport.get("args", []) == server["args"]):
                         return other_clients
                     raise ValueError("Global consumer-cad registration already exists. Use scripts/cad-codex instead.")
         args = [*cli, "mcp", "add", NAME]
         for key, value in env.items():
             args.extend(["--env", f"{key}={value}"])
-        subprocess.run([*args, "--", str(command)], check=True)
+        subprocess.run([*args, "--", str(command), *server["args"]], check=True)
     return other_clients
 
 
