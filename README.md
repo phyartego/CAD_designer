@@ -4,7 +4,7 @@
 
 **用自然语言驱动任意 AI Agent 完成消费电子 3D 结构建模、干涉校验、运动检查与工程出图**
 
-[![Windows x64 Portable](https://img.shields.io/badge/Windows%2010%2F11%20x64-免安装傻瓜包-0078D4?logo=windows)](https://github.com/phyartego/CAD_designer/releases/download/v0.1.0/Consumer-CAD-AI-v0.1.0-Windows-x64-Portable.zip)
+[![Windows x64 Portable](https://img.shields.io/badge/Windows%2010%2F11%20x64-免安装便携版-0078D4?logo=windows)](https://github.com/phyartego/CAD_designer/releases/download/v0.1.0/Consumer-CAD-AI-v0.1.0-Windows-x64-Portable.zip)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](docs/portable.md)
 [![FreeCAD 1.1.2](https://img.shields.io/badge/FreeCAD-1.1.2-CB333B)](https://github.com/FreeCAD/FreeCAD/releases/tag/1.1.2)
 [![MCP Ready](https://img.shields.io/badge/MCP-stdio%20%7C%20Streamable%20HTTP-10A37F)](docs/deployment.md)
@@ -12,7 +12,7 @@
 
 **简体中文** | [English](README_EN.md)
 
-**[下载 Windows x64 免安装傻瓜包 (v0.1.0)](https://github.com/phyartego/CAD_designer/releases/download/v0.1.0/Consumer-CAD-AI-v0.1.0-Windows-x64-Portable.zip)** · [所有发布版本](https://github.com/phyartego/CAD_designer/releases) · [查看支架成品文件](examples/output/desktop-stand.zip)
+**[下载 Windows x64 免安装便携版 (v0.1.0)](https://github.com/phyartego/CAD_designer/releases/download/v0.1.0/Consumer-CAD-AI-v0.1.0-Windows-x64-Portable.zip)** · [所有发布版本](https://github.com/phyartego/CAD_designer/releases) · [查看支架成品文件](examples/output/desktop-stand.zip)
 
 </div>
 
@@ -22,7 +22,7 @@
 
 **Consumer CAD AI** 是一套面向消费电子结构设计的**本地可验证 CAD 引擎 + 通用 AI Agent 工具链**（基于 `build123d` / Open CASCADE 与 FreeCAD）。
 
-- **零依赖开箱即用**：Release 傻瓜包内置完整 **Python 3.12 + 全部 CAD/MCP 依赖 + FreeCAD 1.1.2（含图形界面）**，小白无需自己折腾 Python 或 FreeCAD 环境。
+- **零依赖开箱即用**：Release 便携整合包内置完整 **Python 3.12 + 全部 CAD/MCP 依赖 + FreeCAD 1.1.2（含图形界面）**，小白无需自己折腾 Python 或 FreeCAD 环境。
 - **彻底通用，不绑定任何 Agent**：暴露标准 **MCP (`stdio`)**、**`SKILL.md`** 与 **本地命令行 (`cad.cmd`)**，不限制为 Codex 或特定 IDE —— **WorkBuddy**、Cursor、Claude Desktop / Code、Windsurf、Cline、Antigravity 等都能即插即用。
 - **先校验、再出图**：每次建模都会计算零件包围盒尺寸、安装间隙、两两实体交叠体积（精度 `1e-5 mm³`）与转动开合干涉，通过校验后一次性导出全套工程交付物。
 
@@ -32,7 +32,7 @@
 
 [![铝合金桌面手机支架总装工程图](examples/output/desktop-stand.png)](examples/output/desktop-stand.zip)
 
-示例基于 [desktop_stand.py](examples/desktop_stand.py) 生成：**铝合金主体支架 + 硅胶防滑垫**（整机包络 `62 × 56 × 65 mm`，15° 倾角，含前挡唇与防滑背垫），已内置在傻瓜包 `Run-Demo.cmd` 中，点击上方图片即可下载完整成品归档 [desktop-stand.zip](examples/output/desktop-stand.zip)。
+示例基于 [desktop_stand.py](examples/desktop_stand.py) 生成：**铝合金主体支架 + 硅胶防滑垫**（整机包络 `62 × 56 × 65 mm`，15° 倾角，含前挡唇与防滑背垫），已内置在便携版 `Run-Demo.cmd` 中，点击上方图片即可下载完整成品归档 [desktop-stand.zip](examples/output/desktop-stand.zip)。
 
 <details>
 <summary>每次构建自动产出的 7 类工程文件一览</summary>
@@ -51,7 +51,7 @@
 
 ---
 
-## Windows 10 / 11 傻瓜包：3 步极速上手
+## Windows 10 / 11 免安装便携版：3 步极速上手
 
 > **环境说明**：压缩包内已包含 Python 3.12、CAD 内核、MCP 服务与 FreeCAD 1.1.2 图形界面，**全程无需联网安装运行环境**；仅在你接入云端大模型 / AI Agent 对话时需要联网。
 
