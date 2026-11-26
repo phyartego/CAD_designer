@@ -1,13 +1,30 @@
-Consumer CAD AI | Windows 10 / 11 x64
+Consumer CAD AI | Windows 10 / 11 x64 通用免安装版
 
-1. 在 Windows 里右键 ZIP，选择“全部解压缩”。打开解压后的文件夹。
-2. 双击 Run-Demo.cmd，等它生成翻盖电池仓。成功后会打开本次结果文件夹。
-3. 双击 Open-FreeCAD.cmd。在 FreeCAD 中打开结果里的 assembly.FCStd。
-4. 想用自然语言设计时，双击 Start-Codex.cmd，按提示登录并信任解压目录。
-   输入 /mcp 可看到 consumer-cad 工具。AI 生成的文件保存在 workspace 文件夹。
+本压缩包已内置完整环境（Python 3.12 + CAD/MCP 全套依赖 + FreeCAD 1.1.2），
+无需额外安装 Python 或 FreeCAD，也不绑定任何特定 AI 客户端。
 
-样例和 FreeCAD 可以离线运行。使用 Codex 对话需要联网和可用的 Codex 账号。
-如果双击启动器失败，请确认 ZIP 已完整解压，并且当前目录可写。
-建议将整个文件夹放在本地磁盘的短路径下，例如 C:\CAD。
+【三步极速上手】
 
-更多用法见 README.md。组件及许可见 docs/portable.md。
+1. 解压到短路径
+   在 Windows 里右键 ZIP，选择“全部解压缩”，建议放到本地磁盘短路径（例如 C:\CAD）。
+
+2. 离线生成并查看 3D 成品（无需 AI 即可体验）
+   - 双击 Run-Demo.cmd：自动生成“铝合金桌面手机支架”及全套工程文件，
+     并自动打开 outputs 里的结果文件夹。
+   - 双击 Open-FreeCAD.cmd：启动内置 FreeCAD 图形界面，拖拽或打开结果里的
+     assembly.FCStd 即可 3D 查看模型。
+
+3. 一键接入 WorkBuddy 或任意 AI Agent
+   - 双击 Setup-Agent.cmd：自动按当前解压路径生成 mcp.json 和 .mcp.json，
+     并将标准 MCP 配置复制到剪贴板。
+   - WorkBuddy 用户：
+     在 WorkBuddy 左侧打开“连接器” -> “自定义连接器” -> 类型选 stdio，
+     直接粘贴复制好的 JSON（或按窗口提示逐项填入）并保存。
+     推荐同时导入 skills\consumer-cad\SKILL.md 作为技能。
+   - 其他支持 MCP 或工作区的 Agent（Cursor / Claude Desktop / Claude Code /
+     Windsurf / Cline / Antigravity / Codex 等）：
+     直接粘贴 mcp.json 内容，或用 Agent 打开本解压目录即可调用 .mcp.json 与 cad.cmd。
+
+AI 对话生成的结果默认保存在 workspace 文件夹。
+如果双击脚本失败，请确认 ZIP 已完整解压且当前目录可写。
+更多说明见 README.md（英文见 README_EN.md），组件及许可见 docs/portable.md。

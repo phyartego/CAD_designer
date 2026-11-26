@@ -1,9 +1,7 @@
 [CmdletBinding()]
 param (
     [switch]$SkipFreeCAD,
-    [switch]$SkipCodex,
-    [switch]$SkipDemo,
-    [switch]$GlobalCodex
+    [switch]$SkipDemo
 )
 
 $ErrorActionPreference = "Stop"
@@ -123,13 +121,7 @@ if (-not $SkipFreeCAD) {
     }
     $env:FREECAD_CMD = $cmdPath
 }
-if (-not $SkipCodex) {
-    . (Join-Path $PSScriptRoot "install-codex.ps1")
-    Install-LocalCodex -Root $repoRoot
-}
-$agentArgs = @("scripts/configure_agent.py")
-if ($GlobalCodex) { $agentArgs += "--global-codex" }
-Invoke-Checked $venvPython $agentArgs
+Invoke-Checked $venvPython @("scripts/configure_agent.py")
 $cad = Join-Path $repoRoot ".venv\Scripts\consumer-cad.exe"
 Invoke-Checked $cad @("doctor")
 if (-not $SkipDemo) {
@@ -141,4 +133,4 @@ if (-not $SkipDemo) {
     }
     Write-Host "Demo output: $runDir"
 }
-Write-Host "Ready. Start Codex with .\scripts\cad-codex.cmd. Run .\scripts\cad-codex.cmd mcp list to inspect its configuration."
+Write-Host "Ready. Import .mcp.json (or .local\mcp.json) and skills\consumer-cad\SKILL.md into WorkBuddy or any MCP client."

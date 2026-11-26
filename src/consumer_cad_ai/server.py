@@ -37,9 +37,21 @@ async def _cad(operation, data=None, args=()):
         return json.loads(result_file.read_text(encoding="utf-8"))
 
 
+def _bundled_workspace():
+    exe = Path(sys.executable).resolve()
+    if len(exe.parents) >= 3 and exe.parent.name.lower() == "python" and exe.parents[1].name.lower() == "runtime":
+        if (exe.parents[1] / "freecad").is_dir():
+            return (exe.parents[2] / "workspace").resolve()
+    return None
+
+
 def _workspace():
     configured = os.environ.get("CAD_WORKSPACE")
-    return Path(configured or Path.home() / "consumer-cad-workspace").expanduser().resolve()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    if bundled := _bundled_workspace():
+        return bundled
+    return (Path.home() / "consumer-cad-workspace").resolve()
 
 
 def _run_directory(run_id):

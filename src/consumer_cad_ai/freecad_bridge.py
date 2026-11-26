@@ -9,6 +9,18 @@ import sys
 import tempfile
 
 
+def _bundled_freecad():
+    """Return the bundled FreeCAD console executable when running from a portable bundle."""
+    exe = Path(sys.executable).resolve()
+    if len(exe.parents) >= 2 and exe.parent.name.lower() == "python" and exe.parents[1].name.lower() == "runtime":
+        freecad_bin = exe.parents[1] / "freecad" / "bin"
+        for name in ("freecadcmd.exe", "FreeCADCmd.exe"):
+            candidate = freecad_bin / name
+            if candidate.is_file():
+                return candidate
+    return None
+
+
 def find_freecad(command=None):
     """Locate the console executable used by the official Windows and Linux packages."""
     explicit = command or os.environ.get("FREECAD_CMD")
@@ -17,6 +29,8 @@ def find_freecad(command=None):
         if not path:
             raise FileNotFoundError(f"FreeCAD console executable not found: {explicit}")
         return path
+    if bundled := _bundled_freecad():
+        return str(bundled)
     for name in ("FreeCADCmd", "freecadcmd", "freecadcmd-python3"):
         if path := shutil.which(name):
             return path

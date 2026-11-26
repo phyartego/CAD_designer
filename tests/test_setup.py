@@ -2,12 +2,12 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import tempfile
-import tomllib
-import subprocess
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
+
+from consumer_cad_ai import freecad_bridge, server
 
 
 FILE = Path(__file__).resolve().parents[1] / "scripts" / "configure_agent.py"
@@ -17,7 +17,7 @@ SPEC.loader.exec_module(setup)
 
 
 class SetupTests(unittest.TestCase):
-    def test_configuration_preserves_other_servers_and_paths(self):
+    def test_source_checkout_configuration_writes_universal_mcp_and_skill(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp).resolve() / "含 空格"
             folder = "Scripts" if os.name == "nt" else "bin"
@@ -29,58 +29,65 @@ class SetupTests(unittest.TestCase):
             freecad.touch()
             skill = root / "skills/consumer-cad/SKILL.md"
             skill.parent.mkdir(parents=True)
-            skill.write_text("sample")
-            cfg = root / ".codex/config.toml"
-            cfg.parent.mkdir()
-            cfg.write_text('[mcp_servers.other]\ncommand = "other"\n')
+            skill.write_text("sample", encoding="utf-8")
+
             with patch.dict(os.environ, {"FREECAD_CMD": str(freecad)}):
-                stdio = setup.configure(root)
-                first = cfg.read_text(encoding="utf-8")
+                primary = setup.configure(root)
+                first = primary.read_text(encoding="utf-8")
                 setup.configure(root)
-            self.assertEqual(first, cfg.read_text(encoding="utf-8"))
-            parsed = tomllib.loads(first)["mcp_servers"]
-            self.assertEqual(parsed["other"], {"command": "other"})
-            srv = json.loads(stdio.read_text(encoding="utf-8"))["mcpServers"]["consumer-cad"]
-            self.assertEqual(parsed["consumer-cad"]["command"], srv["command"])
+
+            self.assertEqual(primary, root / ".local" / "mcp.json")
+            self.assertFalse((root / "mcp.json").exists())
+            self.assertEqual(first, (root / ".mcp.json").read_text(encoding="utf-8"))
+            srv = json.loads(first)["mcpServers"]["consumer-cad"]
+            self.assertEqual(srv["type"], "stdio")
             self.assertEqual(srv["command"], str(command))
-            self.assertEqual(parsed["consumer-cad"]["env"], srv["env"])
+            self.assertEqual(srv["args"], [])
             self.assertEqual(srv["env"], {"CAD_WORKSPACE": str(root / "workspace"),
                                           "FREECAD_CMD": str(freecad)})
-            self.assertEqual((root / ".agents/skills/consumer-cad/SKILL.md").read_text(), "sample")
+            self.assertEqual((root / ".agents/skills/consumer-cad/SKILL.md").read_text(encoding="utf-8"), "sample")
 
-    def test_process_scoped_launcher_uses_generated_paths(self):
-        launcher_spec = importlib.util.spec_from_file_location("start_codex", FILE.with_name("start_codex.py"))
-        launcher = importlib.util.module_from_spec(launcher_spec)
-        launcher_spec.loader.exec_module(launcher)
+    def test_portable_bundle_configuration_writes_root_and_workspace_mcp(self):
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp) / "设计 & CAD"
-            (root / ".local").mkdir(parents=True)
-            command = str(root / "cad mcp")
-            payload = {"command": command, "env": {"CAD_WORKSPACE": str(root / "workspace"), "FREECAD_CMD": "C:\\Apps\\FreeCAD Cmd.exe"}}
-            (root / ".local/mcp.json").write_text(json.dumps({"mcpServers": {"consumer-cad": payload}}))
-            with patch.object(launcher, "codex_command", return_value=["codex"]), patch.object(subprocess, "call", return_value=0) as proc:
-                self.assertEqual(launcher.launch(root, ["mcp", "list"]), 0)
-            argv = proc.call_args.args[0]
-            self.assertEqual(argv[:4], ["codex", "-C", str(root), "-c"])
-            config = tomllib.loads(argv[4])["mcp_servers"]["consumer-cad"]
-            self.assertEqual(config["command"], command)
-            self.assertEqual(config["env"], payload["env"])
-            self.assertEqual(argv[5:], ["mcp", "list"])
-            self.assertEqual(proc.call_args.kwargs["cwd"], root)
+            root = Path(temp).resolve() / "便携 目录"
+            py = root / "runtime" / "python" / "python.exe"
+            fc = root / "runtime" / "freecad" / "bin" / "freecadcmd.exe"
+            py.parent.mkdir(parents=True)
+            fc.parent.mkdir(parents=True)
+            py.touch()
+            fc.touch()
+            skill = root / "skills/consumer-cad/SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text("portable-skill", encoding="utf-8")
 
-    def test_native_windows_cli_discovery_is_checkout_scoped(self):
-        spec = importlib.util.spec_from_file_location("start_codex", FILE.with_name("start_codex.py"))
-        launcher = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(launcher)
-        with tempfile.TemporaryDirectory() as temp, patch.object(sys, "platform", "win32"):
-            root = Path(temp) / "cad & models"
-            private = root / ".local/codex/codex-x86_64-pc-windows-msvc.exe"
-            private.parent.mkdir(parents=True)
-            with patch.object(launcher.shutil, "which", return_value="installed-codex.exe"):
-                self.assertEqual(launcher.codex_command(root), ["installed-codex.exe"])
-                private.touch()
-                self.assertEqual(launcher.codex_command(root), [str(private)])
+            primary = setup.configure(root)
+            self.assertEqual(primary, root / "mcp.json")
+            self.assertTrue((root / ".mcp.json").is_file())
+            self.assertEqual(primary.read_text(encoding="utf-8"),
+                             (root / ".mcp.json").read_text(encoding="utf-8"))
+            srv = json.loads(primary.read_text(encoding="utf-8"))["mcpServers"]["consumer-cad"]
+            self.assertEqual(srv["type"], "stdio")
+            self.assertEqual(srv["command"], str(py))
+            self.assertEqual(srv["args"], ["-m", "consumer_cad_ai", "serve"])
+            self.assertEqual(srv["env"], {"CAD_WORKSPACE": str(root / "workspace"),
+                                          "FREECAD_CMD": str(fc)})
+            self.assertEqual((root / ".agents/skills/consumer-cad/SKILL.md").read_text(encoding="utf-8"),
+                             "portable-skill")
 
-    def test_configuration_respects_user_managed_server(self):
-        with self.assertRaisesRegex(ValueError, "user-managed"):
-            setup.codex_config('[mcp_servers.consumer-cad]\ncommand = "custom"\n', {})
+    def test_portable_zero_env_autodiscovery(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve() / "CAD 便携"
+            py = root / "runtime" / "python" / "python.exe"
+            fc = root / "runtime" / "freecad" / "bin" / "freecadcmd.exe"
+            py.parent.mkdir(parents=True)
+            fc.parent.mkdir(parents=True)
+            py.touch()
+            fc.touch()
+
+            with patch.object(sys, "executable", str(py)):
+                with patch.dict(os.environ, {}, clear=True):
+                    self.assertEqual(Path(freecad_bridge.find_freecad()).resolve(), fc)
+                    self.assertEqual(server._workspace(), (root / "workspace").resolve())
+                override_ws = str(root / "custom-ws")
+                with patch.dict(os.environ, {"CAD_WORKSPACE": override_ws}, clear=True):
+                    self.assertEqual(server._workspace(), Path(override_ws).resolve())

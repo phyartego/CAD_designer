@@ -11,3 +11,5 @@ out/
 .local/
 .codex/config.toml
 .agents/skills/consumer-cad/
+.mcp.json
+mcp.json

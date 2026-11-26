@@ -1,4 +1,4 @@
-"""Generate the bundled enclosure and open its result folder."""
+"""Generate the bundled desktop phone stand demo and open its result folder."""
 
 import argparse
 import os
@@ -13,12 +13,13 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="print the result path without opening Explorer")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    output = root / "outputs" / f"hinged-{uuid4().hex[:12]}"
+    recipe = root / "examples" / "desktop_stand.py"
+    output = root / "outputs" / f"desktop-stand-{uuid4().hex[:12]}"
     report = output.parent / (output.name + ".json")
     output.parent.mkdir(exist_ok=True)
-    print("正在生成翻盖电池仓与工程图，请稍候…", flush=True)
+    print("正在生成铝合金桌面手机支架与工程图，请稍候…", flush=True)
     try:
-        status = cad(["--json-out", str(report), "demo", "--out", str(output), "--freecad"])
+        status = cad(["--json-out", str(report), "recipe", str(recipe), "--out", str(output), "--freecad"])
     finally:
         report.unlink(missing_ok=True)
     if status:

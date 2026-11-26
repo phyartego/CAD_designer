@@ -5,12 +5,10 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 root=$(pwd -P)
 freecad=true
 demo=true
-agent_args=()
 for arg in "$@"; do
     case "$arg" in
         --skip-freecad) freecad=false ;;
         --skip-demo) demo=false ;;
-        --global-codex) agent_args+=(--global-codex) ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -39,7 +37,7 @@ python_bin=${CAD_PYTHON:-python3}
 if [[ ! -x .venv/bin/python ]]; then "$python_bin" -m venv .venv; fi
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e .
-.venv/bin/python scripts/configure_agent.py "${agent_args[@]}"
+.venv/bin/python scripts/configure_agent.py
 .venv/bin/consumer-cad doctor
 if "$demo"; then
     mkdir -p "$root/.local/first-run"
@@ -54,4 +52,4 @@ if "$demo"; then
     fi
     echo "Demo output: $out/demo"
 fi
-echo "Ready. Start Codex with ./scripts/cad-codex. Run ./scripts/cad-codex mcp list to inspect its configuration."
+echo "Ready. Import .mcp.json (or .local/mcp.json) and skills/consumer-cad/SKILL.md into your MCP client."

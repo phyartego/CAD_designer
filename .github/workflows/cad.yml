@@ -28,12 +28,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/install.ps1
-      - name: Confirm Codex sees the CAD tools on Windows
+      - name: Confirm universal MCP configs on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $server = .\scripts\cad-codex.cmd mcp get consumer-cad --json | ConvertFrom-Json
-          if (-not $server.enabled) { throw "CAD MCP was not enabled for Codex" }
+          foreach ($cfg in @(".mcp.json", ".local\mcp.json")) {
+            if (-not (Test-Path $cfg)) { throw "Missing $cfg" }
+            $data = Get-Content -Raw $cfg | ConvertFrom-Json
+            if (-not $data.mcpServers."consumer-cad".command) { throw "Missing consumer-cad MCP command in $cfg" }
+          }
       - name: Run tests
         shell: bash
         run: |

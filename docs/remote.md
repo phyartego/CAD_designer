@@ -1,6 +1,6 @@
 # 在网页 ChatGPT 中使用 CAD 工具
 
-本地 Codex 使用安装脚本配置的 stdio。网页 ChatGPT 的工具运行在云端，需要可访问的 MCP 端点。本项目提供可选的 `serve-remote` 命令，和本机共用参数化建模、校验、优化及导出工具。服务仅监听 `127.0.0.1`，支持 MCP Streamable HTTP 和 OAuth 资源服务器发现。对外发布需要自己的域名、HTTPS 反向代理和 OAuth 身份提供商。仓库安装不会自动创建这些外部资源。
+本地 AI Agent 客户端使用安装脚本配置的 stdio MCP。网页 ChatGPT 的工具运行在云端，需要可访问的 MCP 端点。本项目提供可选的 `serve-remote` 命令，和本机共用参数化建模、校验、优化及导出工具。服务仅监听 `127.0.0.1`，支持 MCP Streamable HTTP 和 OAuth 资源服务器发现。对外发布需要自己的域名、HTTPS 反向代理和 OAuth 身份提供商。仓库安装不会自动创建这些外部资源。
 
 ## 配置一个操作者
 
